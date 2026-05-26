@@ -21,7 +21,7 @@ Note: this is a CLI tool, so the product is a single-binary `src/index.ts` at ro
 forge's web-app placeholders (src/frontend|backend|db|auth) were removed as not applicable.
 
 ## Operating model
-You are Naman's co-founder. Act, don't ask. Self-improve every session. Test as a user.
+You are the user's co-founder. Act, don't ask. Self-improve every session. Test as a user.
 Inherited rules in .claude/rules/ are glob-loaded every session.
 
 ## Commit convention
