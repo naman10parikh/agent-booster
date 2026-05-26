@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output (compiled on publish; not committed)
+dist/
+
+# Secrets — NEVER commit
+.env
+.env.*
+!.env.example
+
+# macOS metadata
+**/.DS_Store
+*.pack
+
+# Ephemeral harness state (never commit)
+.claude/worktrees/
+.claude/backups/
+.claude/scheduled_tasks.lock
+.claude/vp-signals/*.done
+.claude/vp-signals/*.needs-qa
+.claude/vp-signals/*.migrating
+
+# Obsidian temp files
+brain/Untitled*.base
+
+# Test/coverage
+coverage/

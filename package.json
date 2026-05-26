@@ -1,0 +1,48 @@
+{
+  "name": "agent-booster",
+  "version": "1.0.0",
+  "description": "Zero-LLM code transforms — deterministic, $0 cost. Handle simple code edits without API calls.",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/naman10parikh/agent-booster.git"
+  },
+  "homepage": "https://github.com/naman10parikh/agent-booster#readme",
+  "bugs": "https://github.com/naman10parikh/agent-booster/issues",
+  "bin": {
+    "agent-booster": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build && pnpm test"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "claude",
+    "agent",
+    "code-transform",
+    "codemod",
+    "zero-llm",
+    "dev-tools",
+    "cli"
+  ],
+  "author": "Naman Parikh",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.37",
+    "typescript": "^5.9.3",
+    "vitest": "^2.0.0"
+  }
+}
