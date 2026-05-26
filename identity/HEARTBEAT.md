@@ -1,23 +1,27 @@
-# {{AGENT_NAME}} — Heartbeat
+# agent-booster — Heartbeat
+
+`agent-booster` is a CLI tool, not a long-running daemon, so its "heartbeat" is the health of the
+repo and its release pipeline rather than a scanning loop.
 
 ## Schedule
 
-| Check                  | Frequency                              | Action on Anomaly                      |
-| ---------------------- | -------------------------------------- | -------------------------------------- |
-| Scan for opportunities | Every 6 hours (Tier 1: GitHub Actions) | Log results to state.json              |
-| Health check           | Every heartbeat                        | If error: pause, alert orchestrator    |
-| Budget check           | Daily                                  | If low: request more via budgetRequest |
-| Performance review     | Daily                                  | If ROI < threshold: reduce scope       |
+| Check                | Frequency                | Action on Anomaly                                          |
+| -------------------- | ------------------------ | --------------------------------------------------------- |
+| Build + test (CI)    | Every push (.github/ci)  | Fail the run; do not publish until green                  |
+| Self-test before pub | Pre-publish              | `prepublishOnly` gates `npm publish` on `build && test`   |
+| Doc/scope drift      | Each maintenance session | If README lists a transform not in the registry → fix it  |
+| Dependency freshness | Periodic                 | Bump devDeps; keep runtime deps at zero                   |
 
 ## Health Indicators
 
-- **Healthy**: Last scan < 12 hours ago, no errors in last 24h
-- **Warning**: Last scan > 12 hours ago OR 1+ errors in 24h
-- **Critical**: Last scan > 24 hours ago OR 3+ errors in 24h → auto-pause
+- **Healthy:** `pnpm build` and `pnpm test` both green (7 tests); README transform table matches
+  the `transforms` registry in `src/index.ts`.
+- **Warning:** CI failing on main, or docs advertising more than is implemented.
+- **Critical:** published package fails a fresh `npx agent-booster list` → yank/patch.
 
 ## Recovery
 
-1. Read last error from state.json
-2. Check LEARNINGS.md for known fixes
-3. If fixable: apply fix, resume
-4. If not: alert orchestrator, preserve state
+1. Reproduce locally: `pnpm install && pnpm build && pnpm test`.
+2. Check [memory/LEARNINGS.md](../memory/LEARNINGS.md) for a known fix.
+3. If fixable: patch, re-run the gate, commit with a `fix:` message.
+4. If a scope/honesty drift: reconcile README ↔ registry before anything else.

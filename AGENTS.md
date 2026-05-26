@@ -1,86 +1,97 @@
-# AGENTS.md — Wiki Schema & Conventions
+# AGENTS.md — agent-booster orchestration conventions
 
-> This file tells the LLM how your wiki is structured.
-> You and the LLM co-evolve this over time.
+> How an agent (Claude Code, or any LLM harness) should operate **this** repo.
+> This is the agent's contract for `agent-booster`; humans should start at [README.md](./README.md)
+> and [QUICKSTART.md](./QUICKSTART.md). The brain hub is [`brain/MOC - agent-booster.md`](./brain/MOC%20-%20agent-booster.md).
 
-## Domain: personal
+## What this repo is
 
-## Created: 2026-04-07
+`agent-booster` is a **zero-LLM code-transform CLI**: deterministic, regex-based source edits
+(strip `console.log`s, sort imports, `var`→`const`, wrap async fns in try/catch, …) that cost
+`$0` and make no API calls. The product is a single TypeScript binary at `src/index.ts`; the rest
+of the tree is the inherited Energy agent-native harness (identity, memory, brain, skills, hooks,
+rules, sub-agents). See [CLAUDE.md](./CLAUDE.md) for the operating model.
 
-## Directory Structure
+> The repo previously shipped a mis-copied WikiMem wiki-schema in this file. That schema has been
+> archived to [AGENTS.md.example](./AGENTS.md.example) for reference; this file is now the real,
+> repo-specific orchestration guide.
+
+## Directory map (what lives where)
 
 ```
-raw/              # Immutable source documents (never modified by LLM)
-wiki/             # LLM-generated markdown (the knowledge base)
-  index.md        # Content catalog — every page listed with summary
-  log.md          # Chronological record of operations
-  sources/        # One summary page per ingested source
-  entities/       # Pages for people, organizations, tools, etc.
-  concepts/       # Pages for ideas, frameworks, patterns, etc.
-  syntheses/      # Cross-cutting analyses, comparisons, explorations
-AGENTS.md         # This file — wiki schema and conventions
-config.yaml       # Configuration (LLM provider, sources, schedules)
+src/                  # THE PRODUCT — the agent-booster CLI (single entry: index.ts)
+  index.ts            #   transform registry + the 6 transforms + arg parsing + file walker
+  __tests__/          #   vitest suite (runs the compiled CLI end-to-end)
+dist/                 # tsc build output (gitignored; compiled on publish)
+eval/                 # eval + observer harness (scaffold; see eval/README.md)
+identity/             # who this agent is: SOUL.md, BRAND.md, MEMORY.md, HEARTBEAT.md
+memory/               # long-term memory: MEMORY.md (index) + LEARNINGS.md (append-only)
+  archive/            #   compressed entries >30 days (never deleted)
+  daily/              #   per-session logs
+  topics/             #   deep-dive topic files
+  maintainer-prompts/ #   raw maintainer directives (kept empty in this public repo)
+brain/                # Obsidian knowledge graph: MOC + ORG_CONTEXT + ORG_MEMORY
+skills/               # repo-local skills (scaffold; inherited skills live in .claude/skills/)
+hooks/                # repo-local hooks (scaffold; active hooks live in .claude/hooks/)
+tools/                # repo-local tools (scaffold)
+scripts/              # harness utilities (memory-search, memory-compress, budget-manager, …)
+.claude/              # the Claude Code harness: rules/, skills/, hooks/, agents/, commands/
+  rules/              #   operating rules, glob-loaded every session
+  skills/             #   on-demand capabilities
+  hooks/              #   lifecycle automation (session start, pre-compact, …)
+  agents/             #   specialist sub-agents (code-reviewer, research-agent, …)
+  commands/           #   slash commands (/start, /wrap-up, /status, …)
+.github/workflows/    # CI (build + test on push)
 ```
 
-## Page Conventions
+Empty scaffold dirs (`eval/`, `skills/`, `hooks/`, `tools/`, `memory/*`) each carry a one-line
+`README.md` explaining their intended role until they are populated.
 
-Every wiki page has YAML frontmatter:
+## How to work this repo (agent boot sequence)
 
-```yaml
----
-title: "Page Title"
-type: source | entity | concept | synthesis | index | log
-created: "YYYY-MM-DD"
-updated: "YYYY-MM-DD"
-tags: [tag1, tag2]
-sources: ["raw/filename.md"] # Which raw sources inform this page
-related: ["[[Other Page]]"] # Explicit cross-references
-summary: "One-line summary" # Used in index.md
----
+1. Read [CLAUDE.md](./CLAUDE.md) (operating model), then [CONTEXT.md](./CONTEXT.md) (current state).
+2. Read [`brain/MOC - agent-booster.md`](./brain/MOC%20-%20agent-booster.md) to navigate the docs.
+3. Check [memory/LEARNINGS.md](./memory/LEARNINGS.md) for known pitfalls before changing `src/`.
+4. `.claude/rules/*.md` are glob-loaded automatically — they are the hard rules.
+
+## Build & test (the only commands you need)
+
+```bash
+pnpm install      # install deps (Node >= 18)
+pnpm build        # tsc → dist/
+pnpm test         # vitest — runs the compiled CLI end-to-end (7 tests)
+pnpm dev          # tsc --watch
 ```
 
-## Wikilinks
+**Self-test gate:** never claim a `src/` change works until `pnpm build && pnpm test` are both
+green AND you have run the real CLI on sample input (e.g.
+`echo 'var x = 5;' | node dist/index.js var-to-const --stdin`).
 
-Use `[[Page Title]]` to link between pages. The LLM maintains these links.
-Orphan pages (no inbound links) are flagged by `wikimem lint`.
+## Editing rules (repo-specific)
 
-## Operations
+- **Honesty bar:** the README documents exactly 6 implemented transforms and 2 roadmap transforms
+  (`add-types`, `async-await`). Do **not** advertise transforms that aren't in the `transforms`
+  registry in `src/index.ts`. No fabricated benchmarks (no "352x", no "WASM" — this is pure regex).
+- **Transforms are heuristic, not AST.** Keep them conservative; when in doubt, skip the edit
+  rather than risk a wrong rewrite. AST-level work belongs to the roadmap milestone.
+- **Adding a transform:** add the function in `src/index.ts`, register it in the `transforms` map,
+  add it to BOTH the `list`/`--help` text and the README transform table, and add a vitest case.
+- Keep `src/index.ts` self-contained — zero runtime dependencies is a feature.
 
-### Ingest
+## Commit convention
 
-When a new source is added to raw/:
+This repo inherits Energy's snap-back grammar (git revert works at 3 granularities):
 
-1. Read the source completely
-2. Create/update a source summary page in wiki/sources/
-3. Identify entities mentioned → create/update entity pages
-4. Identify concepts discussed → create/update concept pages
-5. Update index.md with new/modified pages
-6. Append to log.md
+```
+feat(skill):    — a new/changed capability
+feat(employee): — an agent-role / persona change
+feat(company):  — repo-wide structural change
+fix: / docs: / refactor: / test: / chore:  — conventional commits
+```
 
-### Query
+## Memory & brain protocol
 
-When answering a question:
-
-1. Read index.md to find relevant pages
-2. Read the relevant pages
-3. Synthesize an answer with [[wikilink]] citations
-4. Optionally file the answer as a synthesis page
-
-### Lint
-
-Periodically check for:
-
-- Contradictions between pages
-- Stale claims superseded by newer sources
-- Orphan pages with no inbound links
-- Missing cross-references
-- Important concepts mentioned but lacking their own page
-- Data gaps that could be filled
-
-## Quality Standards
-
-- Every claim should cite its source via wikilink
-- Summaries should be concise (1-3 sentences in frontmatter)
-- Pages should be interconnected (no isolated islands)
-- Prefer updating existing pages over creating new ones
-- Flag contradictions explicitly rather than silently overwriting
+- New durable decision → one line in [memory/MEMORY.md](./memory/MEMORY.md) under the right header.
+- Error fixed → root-cause entry in [memory/LEARNINGS.md](./memory/LEARNINGS.md).
+- Anything worth navigating later → wikilink it into the [MOC](./brain/MOC%20-%20agent-booster.md);
+  every brain note backlinks the MOC and carries YAML frontmatter.
