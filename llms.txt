@@ -1,0 +1,15 @@
+# agent-booster
+
+> > Zero-LLM code transforms — deterministic, $0 cost, no API calls.
+
+## Documentation
+
+- [README.md](README.md): > Zero-LLM code transforms — deterministic, $0 cost, no API calls.
+- [AGENTS.md](AGENTS.md): > How an agent (Claude Code, or any LLM harness) should operate this repo.
+- [CLAUDE.md](CLAUDE.md): > Forged from Energy via harness-forge (CP103). One repo = one recursively self-improving
+- [QUICKSTART.md](QUICKSTART.md): The fastest path from clone to a working transform.
+
+## Notes
+
+- This file follows the llms.txt convention (https://llmstxt.org) so AI agents can
+  discover this repo's docs without scraping. Generated from the README + key docs.
