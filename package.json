@@ -1,5 +1,5 @@
 {
-  "name": "agent-booster",
+  "name": "@energy/agent-booster",
   "version": "1.0.0",
   "description": "Zero-LLM code transforms — deterministic, $0 cost. Handle simple code edits without API calls.",
   "type": "module",
@@ -10,7 +10,8 @@
   "homepage": "https://github.com/naman10parikh/agent-booster#readme",
   "bugs": "https://github.com/naman10parikh/agent-booster/issues",
   "bin": {
-    "agent-booster": "./dist/index.js"
+    "agent-booster": "./dist/index.js",
+    "agent-booster-mcp": "./dist/mcp-server.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
