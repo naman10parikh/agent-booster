@@ -26,3 +26,6 @@ brain/Untitled*.base
 
 # Test/coverage
 coverage/
+
+# Observability runtime trail (written per-run; never commit)
+logs/

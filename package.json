@@ -45,5 +45,8 @@
     "@types/node": "^20.19.37",
     "typescript": "^5.9.3",
     "vitest": "^2.0.0"
+  },
+  "dependencies": {
+    "@e2b/sdk": "^2.5.0"
   }
 }

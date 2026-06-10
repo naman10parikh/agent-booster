@@ -25,11 +25,18 @@ esac
 # Extract file path if available
 FILE_PATH="${CLAUDE_TOOL_INPUT_FILE_PATH:-}"
 
-# Atomic append with flock to handle multi-terminal
-(
-  flock -w 5 200 || exit 0
-  echo "{\"ts\":\"$TIMESTAMP\",\"tool\":\"$TOOL_NAME\",\"terminal\":\"$TERMINAL_CONTEXT\",\"file\":\"$FILE_PATH\"}" >> "$AUDIT_FILE"
-) 200>"$AUDIT_FILE.lock"
+# Atomic append with flock to handle multi-terminal.
+# flock is absent on macOS by default — fall back to a plain append there
+# (single-line appends are atomic enough; we just lose cross-terminal locking).
+AUDIT_LINE="{\"ts\":\"$TIMESTAMP\",\"tool\":\"$TOOL_NAME\",\"terminal\":\"$TERMINAL_CONTEXT\",\"file\":\"$FILE_PATH\"}"
+if command -v flock >/dev/null 2>&1; then
+  (
+    flock -w 5 200 || exit 0
+    echo "$AUDIT_LINE" >> "$AUDIT_FILE"
+  ) 200>"$AUDIT_FILE.lock"
+else
+  echo "$AUDIT_LINE" >> "$AUDIT_FILE"
+fi
 
 # Prune audit log if over 10K lines (keep recent 5K)
 if [ -f "$AUDIT_FILE" ]; then

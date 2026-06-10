@@ -24,6 +24,9 @@
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
+import { search, formatHits } from "./memory-search.js";
+import { routeFile, formatPlan } from "./route.js";
+import { recordRun, readRuns } from "./run-log.js";
 
 // ─── Transform Registry ───
 
@@ -272,6 +275,13 @@ Transforms:
   format-imports     Sort and group import statements
   add-strict         Add 'use strict' directive
 
+Commands:
+  route <file>           Classify edits → run mechanical ones for $0, escalate the rest to an LLM
+  memory-search "<q>"    BM25 search over this repo's brain (MEMORY.md, memory/, brain/, docs/)
+  sandbox-run <t> <f>    Run transform <t> over file <f> inside an isolated E2B sandbox
+  log [N]                Show the last N runs from the observability trail (logs/runs.jsonl)
+  list                   List available transforms
+
 Options:
   --dry-run          Show changes without writing
   --stdin            Read from stdin
@@ -280,6 +290,8 @@ Options:
 Examples:
   agent-booster var-to-const src/
   agent-booster remove-console src/utils.ts --dry-run
+  agent-booster route src/utils.ts --dry-run
+  agent-booster memory-search "zero-LLM regex transforms"
   cat file.ts | agent-booster add-types --stdin
 `);
     process.exit(0);
@@ -296,6 +308,97 @@ Examples:
   if (args[0] === "--version" || args[0] === "-v") {
     console.log("agent-booster v1.0.0");
     process.exit(0);
+  }
+
+  // ─── Meta-commands (route / memory-search / log / sandbox-run) ───
+  // These run BEFORE the transform-registry lookup so they don't collide with transform names.
+
+  if (args[0] === "memory-search") {
+    const start = Date.now();
+    const query = args.slice(1).filter((a) => !a.startsWith("-")).join(" ");
+    const jsonOut = args.includes("--json");
+    const hits = search(query, 5);
+    recordRun({
+      ts: new Date().toISOString(),
+      command: "memory-search",
+      args: [query],
+      durationMs: Date.now() - start,
+      outcome: "ok",
+      note: `${hits.length} hit(s)`,
+    });
+    console.log(jsonOut ? JSON.stringify(hits) : formatHits(query, hits));
+    process.exit(0);
+  }
+
+  if (args[0] === "log") {
+    const n = Number(args[1]) || 20;
+    const runs = readRuns(n);
+    if (args.includes("--json")) {
+      console.log(JSON.stringify(runs));
+    } else if (runs.length === 0) {
+      console.log(
+        "No runs logged yet — every agent-booster invocation appends one entry to logs/runs.jsonl.",
+      );
+    } else {
+      console.log(`agent-booster run-log — last ${runs.length} run(s):`);
+      for (const r of runs) {
+        const detail =
+          r.files !== undefined
+            ? ` files=${r.files} changes=${r.changes ?? 0}`
+            : r.note
+              ? ` (${r.note})`
+              : "";
+        console.log(
+          `  ${r.ts}  ${r.command.padEnd(16)} ${r.outcome.padEnd(5)} ${r.durationMs}ms${detail}`,
+        );
+      }
+    }
+    process.exit(0);
+  }
+
+  if (args[0] === "route") {
+    const start = Date.now();
+    const dryRun = args.includes("--dry-run");
+    const jsonOut = args.includes("--json");
+    const file = args
+      .slice(1)
+      .find((a) => !a.startsWith("-"));
+    if (!file) {
+      console.error("route: no file specified. Usage: agent-booster route <file>");
+      process.exit(1);
+    }
+    try {
+      const plan = routeFile(file, { dryRun });
+      recordRun({
+        ts: new Date().toISOString(),
+        command: "route",
+        args: [file],
+        durationMs: Date.now() - start,
+        outcome: "ok",
+        files: 1,
+        changes: plan.totalChanges,
+        note: `${plan.mechanical.length} mechanical, ${plan.escalated.length} escalated`,
+      });
+      console.log(jsonOut ? JSON.stringify(plan) : formatPlan(plan));
+      process.exit(0);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error(String(err));
+      recordRun({
+        ts: new Date().toISOString(),
+        command: "route",
+        args: [file],
+        durationMs: Date.now() - start,
+        outcome: "error",
+        error: error.message,
+      });
+      console.error(`route: ${error.message}`);
+      process.exit(1);
+    }
+  }
+
+  if (args[0] === "sandbox-run") {
+    void runSandbox(args.slice(1));
+    return;
   }
 
   const transformName = args[0] as string;
@@ -334,6 +437,7 @@ Examples:
     process.exit(1);
   }
 
+  const runStart = Date.now();
   const files = getFiles(target);
   let totalChanges = 0;
   const results: Array<{ file: string; changes: number; description: string }> =
@@ -364,6 +468,18 @@ Examples:
     }
   }
 
+  // ─── Observability: append one audit record for this transform run. ───
+  recordRun({
+    ts: new Date().toISOString(),
+    command: transformName,
+    args: [target],
+    durationMs: Date.now() - runStart,
+    outcome: "ok",
+    files: results.length,
+    changes: totalChanges,
+    note: dryRun ? "dry-run" : undefined,
+  });
+
   if (jsonOutput) {
     console.log(
       JSON.stringify({
@@ -377,6 +493,55 @@ Examples:
     console.log(
       `\n${dryRun ? "[DRY RUN] " : ""}${totalChanges} changes across ${results.length} files`,
     );
+  }
+}
+
+/** sandbox-run command: dynamically import the E2B path so the SDK only loads when used. */
+async function runSandbox(rest: string[]): Promise<void> {
+  const start = Date.now();
+  const positional = rest.filter((a) => !a.startsWith("-"));
+  const [transformName, file] = positional;
+  const jsonOut = rest.includes("--json");
+  if (!transformName || !file) {
+    console.error(
+      "sandbox-run: usage: agent-booster sandbox-run <transform> <file>",
+    );
+    process.exit(1);
+  }
+  try {
+    const { sandboxRun } = await import("./sandbox-run.js");
+    const res = await sandboxRun(transformName, file);
+    recordRun({
+      ts: new Date().toISOString(),
+      command: "sandbox-run",
+      args: [transformName, file],
+      durationMs: Date.now() - start,
+      outcome: "ok",
+      changes: res.changes,
+      note: `sandbox=${res.sandboxId}`,
+    });
+    if (jsonOut) {
+      console.log(JSON.stringify(res));
+    } else {
+      console.log(
+        `sandbox-run: ${transformName} on ${file} inside E2B sandbox ${res.sandboxId} ` +
+          `(${res.changes} change(s), ${res.durationMs}ms)\n`,
+      );
+      process.stdout.write(res.code);
+    }
+    process.exit(0);
+  } catch (err: unknown) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    recordRun({
+      ts: new Date().toISOString(),
+      command: "sandbox-run",
+      args: [transformName, file],
+      durationMs: Date.now() - start,
+      outcome: "error",
+      error: error.message,
+    });
+    console.error(`sandbox-run failed: ${error.message}`);
+    process.exit(1);
   }
 }
 
