@@ -83,6 +83,7 @@ Every day [.github/workflows/improve.yml](../.github/workflows/improve.yml) runs
 The script runs the golden evals and compares the pass count with [eval/baseline.json](../eval/baseline.json).
 It lists failing cases and outdated dependencies, and on the CI runner it tries the in-range updates.
 It writes a proposal to `logs/improve/latest.md`, uses no model and no secret, and merges nothing.
+The workflow then opens one issue labelled `proposal`, or updates the one already open, so a person can review it.
 It is not L3, because the loop does not change its own steps.
 
 **How do I run its tests or evals?**
