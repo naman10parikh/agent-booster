@@ -41,7 +41,7 @@ Every error → root cause → rule. Auto-compressed when >500 lines (memory-com
   copies (CLI, `src/transforms.ts`, MCP server) with a golden case in `eval/golden.test.ts` that
   failed before it, and the CLI-and-MCP agreement case guards the copies from drifting.
 
-## 2026-10-20 — Three copies of the transforms, and a skill that named two
+## 2026-10-20: Three copies of the transforms, and a skill that named two
 
 - **What broke:** the transforms lived in `src/index.ts`, `src/transforms.ts` and `src/mcp-server.ts`. The
   add-a-transform skill named only the first two, so a transform added by following it never reached the MCP
