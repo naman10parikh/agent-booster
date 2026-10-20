@@ -17,8 +17,11 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc",
+    "prepare": "tsc",
     "dev": "tsc --watch",
     "test": "vitest run",
+    "eval": "vitest run --config eval/vitest.config.ts",
+    "improve": "node scripts/improve.mjs",
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "files": [

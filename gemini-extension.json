@@ -1,0 +1,17 @@
+{
+  "name": "agent-booster",
+  "version": "1.0.0",
+  "description": "Mechanical code edits without a model: deterministic, free, offline.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "agent-booster": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "-p",
+        "github:naman10parikh/agent-booster",
+        "agent-booster-mcp"
+      ]
+    }
+  }
+}

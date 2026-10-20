@@ -1,0 +1,17 @@
+{
+  "name": "agent-booster",
+  "owner": {
+    "name": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "metadata": {
+    "description": "Agent Booster, agent-native code transforms: mechanical edits without a model."
+  },
+  "plugins": [
+    {
+      "name": "agent-booster",
+      "source": "./",
+      "description": "Mechanical code edits without a model: deterministic, free, offline."
+    }
+  ]
+}

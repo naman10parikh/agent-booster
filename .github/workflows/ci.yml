@@ -30,3 +30,12 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+      - name: Golden evals
+        run: pnpm eval
+
+      - name: Smoke the bins
+        run: |
+          node dist/index.js --version
+          echo 'var x = 5;' | node dist/index.js var-to-const --stdin
+          node dist/mcp-server.js < /dev/null

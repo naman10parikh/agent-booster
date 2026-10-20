@@ -1,0 +1,28 @@
+{
+  "dsip": "0.1",
+  "product": "agent-booster",
+  "description": "How Agent Booster improves itself. The loop is deterministic: no model, no secret. It proposes; a person merges.",
+  "level": "L2",
+  "level_meaning": "L0 evals exist; L1 evals gate merges in CI; L2 a scheduled loop runs and writes proposals; L3 the loop improves itself. Agent Booster is at L2: .github/workflows/improve.yml runs scripts/improve.mjs daily and writes a proposal. It is not L3: the loop does not change its own steps.",
+  "levels": ["agent"],
+  "loop": {
+    "cadence": "nightly",
+    "runner": ".github/workflows/improve.yml -> scripts/improve.mjs",
+    "steps": ["review", "extract", "propose", "validate", "ship"],
+    "note": "review runs the golden evals; extract compares them with eval/baseline.json; propose lists failing cases and outdated or deprecated dependencies and tries the in-range updates on the CI runner; validate is CI on the pull request; ship is a person merging it."
+  },
+  "selection": "performance",
+  "eval": {
+    "rubric": "eval/golden.test.ts (15 binary golden cases, including CLI and MCP agreement) and src/__tests__/ (7 end-to-end cases), run by pnpm test and pnpm eval",
+    "gate": "all tests and evals pass && evals_passed >= eval/baseline.json",
+    "noSelfGrading": true
+  },
+  "snapback": {
+    "granularity": ["skill", "employee"],
+    "vcs": "git"
+  },
+  "externalIntelligence": {
+    "enabled": false,
+    "source": "none yet; the loop reads only this repository and the package registry"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "Booster",
+  "description": "Mechanical code edits without a model: deterministic, free, offline.",
+  "url": "https://github.com/naman10parikh/agent-booster",
+  "version": "1.0.0",
+  "provider": {
+    "organization": "Naman Parikh",
+    "url": "https://github.com/naman10parikh"
+  },
+  "capabilities": {
+    "streaming": false
+  },
+  "defaultInputModes": [
+    "text/plain"
+  ],
+  "defaultOutputModes": [
+    "text/plain"
+  ],
+  "skills": [
+    {
+      "id": "route-the-boring-path",
+      "name": "route-the-boring-path",
+      "description": "Before spending model tokens on an edit, route the mechanical part to a free transform."
+    },
+    {
+      "id": "sandbox-untrusted-transform",
+      "name": "sandbox-untrusted-transform",
+      "description": "Transform code you do not trust inside an E2B microVM, not on the host."
+    },
+    {
+      "id": "add-a-transform",
+      "name": "add-a-transform",
+      "description": "Add a new transform to Agent Booster with its registries, docs and test."
+    }
+  ]
+}
