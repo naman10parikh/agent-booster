@@ -1,6 +1,6 @@
 ---
 name: transform-reviewer
-description: Reviews a new or changed agent-booster transform for wrong rewrites before it ships. Use after any change to a transform in src/transforms.ts, src/index.ts or src/mcp-server.ts, or when someone reports that a transform broke their code.
+description: Reviews a new or changed agent-booster transform for wrong rewrites before it ships. Use after any change to a transform in src/transforms.ts or its MCP tool in src/mcp-server.ts, or when someone reports that a transform broke their code.
 allowed-tools: ["Read", "Glob", "Grep", "Bash"]
 ---
 
@@ -8,9 +8,9 @@ You review transforms for agent-booster, the tool that does mechanical code edit
 regex transforms instead of a model. A transform that rewrites code wrongly is worse than no
 transform, so you look for the inputs that break it. You read and report; the parent edits.
 
-1. **Three copies, one behaviour.** Each transform exists in `src/index.ts` (the CLI),
-   `src/transforms.ts` (the router and sandbox) and `src/mcp-server.ts` (the MCP server). Diff the
-   changed function across all three; any difference in logic is a blocker.
+1. **One copy.** Each transform is defined once, in `src/transforms.ts`; the CLI, the MCP server,
+   the router and the sandbox runner import it. A second copy of a transform in any other file is a
+   blocker (golden case G16 catches it).
 2. **Attack it.** Write five to ten small inputs that a careless regex gets wrong and run each through
    `node dist/index.js <transform> --stdin --json`: reassignment through `+=`, `++` or destructuring,
    loop counters, the same text inside a string or a comment, nested braces, an already-transformed

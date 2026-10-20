@@ -27,131 +27,16 @@
  *   node dist/mcp-server.js
  */
 
-// ─── Transform implementations (identical to src/index.ts) ───────────────────
-// Kept inline so this file is self-contained and the shim can run standalone.
-
-interface TransformResult {
-  code: string;
-  changes: number;
-  description: string;
-}
-
-function varToConst(code: string): TransformResult {
-  let changes = 0;
-  let result = code.replace(/\bvar\s+(\w+)\s*=/g, (_match, name: string) => {
-    const reassignPattern = new RegExp(`\\b${name}\\s*(?:[-+*/%&|^]|\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?)?=(?!=)`, "g");
-    const matches = code.match(reassignPattern);
-    if (matches && matches.length <= 1 && !new RegExp(`(?:\\+\\+|--)\\s*\\b${name}\\b|\\b${name}\\s*(?:\\+\\+|--)`).test(code)) {
-      changes++;
-      return `const ${name} =`;
-    }
-    return _match;
-  });
-  result = result.replace(/\blet\s+(\w+)\s*=/g, (_match, name: string) => {
-    const reassignPattern = new RegExp(
-      `(?<!(?:const|let|var)\\s*)\\b${name}\\s*(?:[-+*/%&|^]|\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?)?=(?!=)`,
-      "g",
-    );
-    const fullMatches = result.match(reassignPattern);
-    if ((!fullMatches || fullMatches.length === 0) && !new RegExp(`(?:\\+\\+|--)\\s*\\b${name}\\b|\\b${name}\\s*(?:\\+\\+|--)`).test(result)) {
-      changes++;
-      return `const ${name} =`;
-    }
-    return _match;
-  });
-  return { code: result, changes, description: "var/let → const" };
-}
-
-function removeConsole(code: string): TransformResult {
-  let changes = 0;
-  const result = code.replace(
-    /^[ \t]*console\.(log|warn|error|debug|info|trace|dir|table|time|timeEnd|group|groupEnd)\([\s\S]*?\);[ \t]*\n?/gm,
-    () => { changes++; return ""; },
-  );
-  return { code: result, changes, description: "Removed console statements" };
-}
-
-function addLogging(code: string, filename: string): TransformResult {
-  let changes = 0;
-  const module = filename.replace(/\.[^.]+$/, "");
-  const result = code.replace(
-    /^(\s*)((?:export\s+)?(?:async\s+)?function\s+(\w+)\s*\([^)]*\)\s*(?::\s*[^{]+)?\{)/gm,
-    (_match, indent: string, declaration: string, funcName: string) => {
-      changes++;
-      return `${indent}${declaration}\n${indent}  console.debug("[${module}] ${funcName}() called");`;
-    },
-  );
-  return { code: result, changes, description: "Added debug logging" };
-}
-
-function addErrorHandling(code: string): TransformResult {
-  let changes = 0;
-  const result = code.replace(
-    /^(\s*)((?:export\s+)?async\s+function\s+(\w+)\s*\([^)]*\)\s*(?::\s*[^{]+)?\{)\n([\s\S]*?)^(\s*\})/gm,
-    (_match, indent: string, declaration: string, funcName: string, body: string, closingBrace: string) => {
-      if (body.includes("try {") || body.includes("try{")) return _match;
-      changes++;
-      const innerIndent = indent + "  ";
-      const wrappedBody = body
-        .split("\n")
-        .map((line: string) => (line.trim() ? innerIndent + line.trim() : ""))
-        .join("\n");
-      return `${indent}${declaration}
-${innerIndent}try {
-${wrappedBody}
-${innerIndent}} catch (err) {
-${innerIndent}  const error = err instanceof Error ? err : new Error(String(err));
-${innerIndent}  console.error("[${funcName}]", error.message);
-${innerIndent}  throw error;
-${innerIndent}}
-${closingBrace}`;
-    },
-  );
-  return { code: result, changes, description: "Added error handling" };
-}
-
-function formatImports(code: string): TransformResult {
-  let changes = 0;
-  const lines = code.split("\n");
-  const importLines: string[] = [];
-  const otherLines: string[] = [];
-  let pastImports = false;
-  for (const line of lines) {
-    if (!pastImports && /^\s*import\s/.test(line)) {
-      importLines.push(line);
-    } else {
-      if (importLines.length > 0 && !pastImports && line.trim() === "") continue;
-      if (importLines.length > 0 && line.trim() !== "" && !pastImports) pastImports = true;
-      otherLines.push(line);
-    }
-  }
-  if (importLines.length < 2) return { code, changes: 0, description: "No import sorting needed" };
-  const nodeImports: string[] = [];
-  const externalImports: string[] = [];
-  const relativeImports: string[] = [];
-  for (const imp of importLines) {
-    if (/from\s+["']node:/.test(imp) || /from\s+["'](?:fs|path|os|url|http|https|crypto|stream|events|child_process|util|assert|buffer|net|tls|dns|cluster|worker_threads)["']/.test(imp)) {
-      nodeImports.push(imp);
-    } else if (/from\s+["']\./.test(imp)) {
-      relativeImports.push(imp);
-    } else {
-      externalImports.push(imp);
-    }
-  }
-  nodeImports.sort(); externalImports.sort(); relativeImports.sort();
-  const sorted: string[] = [];
-  if (nodeImports.length > 0)    { sorted.push(...nodeImports, "");    changes++; }
-  if (externalImports.length > 0) { sorted.push(...externalImports, ""); changes++; }
-  if (relativeImports.length > 0) { sorted.push(...relativeImports, ""); changes++; }
-  const result = [...sorted, ...otherLines].join("\n");
-  return { code: result, changes, description: "Sorted and grouped imports" };
-}
-
-function addStrict(code: string): TransformResult {
-  if (code.startsWith('"use strict"') || code.startsWith("'use strict'"))
-    return { code, changes: 0, description: "Already has 'use strict'" };
-  return { code: `"use strict";\n\n${code}`, changes: 1, description: "Added 'use strict'" };
-}
+// ─── Transforms: the one copy, shared with the CLI, the router and the sandbox runner ───
+import {
+  varToConst,
+  removeConsole,
+  addLogging,
+  addErrorHandling,
+  formatImports,
+  addStrict,
+  type TransformResult,
+} from "./transforms.js";
 
 // ─── Tool registry ────────────────────────────────────────────────────────────
 

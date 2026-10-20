@@ -24,9 +24,9 @@ flowchart LR
 ```
 
 The CLI is [src/index.ts](../src/index.ts).
-It keeps its own copy of the six transforms, so the transforms depend on nothing else.
-[src/transforms.ts](../src/transforms.ts) holds the shared copy that the router and the sandbox runner import.
-[src/mcp-server.ts](../src/mcp-server.ts) holds a third copy and offers one MCP tool per transform.
+The six transforms are defined once, in [src/transforms.ts](../src/transforms.ts), and depend on nothing else.
+The CLI, the router and the sandbox runner import them from there.
+[src/mcp-server.ts](../src/mcp-server.ts) imports them too and offers one MCP tool per transform.
 MCP, the Model Context Protocol, is the standard way an agent calls outside tools.
 The MCP tools take code as text and return the changed code, so they never touch files.
 
@@ -55,7 +55,7 @@ The `--only` flag limits it to the transforms you name.
 
 ## Extending it
 
-- **A new transform.** Follow [skills/add-a-transform/SKILL.md](../skills/add-a-transform/SKILL.md). Write a function shaped `(code, filename) => { code, changes, description }` that changes nothing when nothing matches. Add it to the `transforms` map in [src/transforms.ts](../src/transforms.ts) and in [src/index.ts](../src/index.ts). Add a matching tool to `TOOLS` in [src/mcp-server.ts](../src/mcp-server.ts), because the golden evals compare the CLI with the MCP server. Update the help text in [src/index.ts](../src/index.ts).
+- **A new transform.** Follow [skills/add-a-transform/SKILL.md](../skills/add-a-transform/SKILL.md). Write a function shaped `(code, filename) => { code, changes, description }` that changes nothing when nothing matches. Put it, and its entry in the `transforms` map, in [src/transforms.ts](../src/transforms.ts) only: the CLI, the router and the sandbox runner read that map. Add a matching tool to `TOOLS` in [src/mcp-server.ts](../src/mcp-server.ts), because the golden evals compare the CLI with the MCP server. Update the help text in [src/index.ts](../src/index.ts) and the table in [README.md](../README.md). Golden case G16 fails if a transform is defined in a second file.
 - **Tests for it.** Add a case to [src/\_\_tests\_\_/transforms.test.ts](../src/__tests__/transforms.test.ts), with a case where it must not fire. Add a golden case to [eval/golden.test.ts](../eval/golden.test.ts).
 - **An edit that needs reasoning.** Do not write a regex for it. Add its name to `LLM_ONLY_TRANSFORMS` in [src/transforms.ts](../src/transforms.ts) and a detector to `detectLlmNeeds` in [src/route.ts](../src/route.ts).
 - **A new command.** Add a branch to `main` in [src/index.ts](../src/index.ts), and call `recordRun` so it reaches the run log.

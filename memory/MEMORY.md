@@ -7,8 +7,10 @@
 
 - **Zero-LLM, regex-only.** All transforms are deterministic regular-expression edits — no API
   calls, no WASM, no native bindings, no network. `$0` per run, fully reproducible. (2026-05-25)
-- **Single self-contained binary.** The product is one file, `src/index.ts`, with zero runtime
-  dependencies (Node builtins only). Keeps install instant and the tool auditable. (2026-05-25)
+- **One copy of each transform.** The transforms live once, in `src/transforms.ts`, with zero
+  runtime dependencies (Node builtins only); the CLI, the MCP server, the router and the sandbox
+  runner import them. Only `sandbox-run` loads the E2B SDK. Keeps the tool auditable. (2026-10-20;
+  before that, the CLI and the MCP server each kept a copy)
 - **6 transforms shipped, 2 deferred.** `add-types` and `async-await` need AST-level analysis (the
   TypeScript compiler API), so they are roadmap, not regex. Implemented: `var-to-const`,
   `remove-console`, `add-logging`, `add-error-handling`, `format-imports`, `add-strict`. (2026-05-25)

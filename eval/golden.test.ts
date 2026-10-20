@@ -1,10 +1,11 @@
 // Golden tasks for agent-booster: binary pass or fail, run by `pnpm eval` and by CI on every push.
 // Each case pins the exact output of a transform on a small input, including the cases a regex
 // transform gets wrong if it is careless (compound assignment, loop counters, strings). The last
-// cases check that the CLI and the MCP server give the same answer, so their copies cannot drift.
+// cases check that the CLI and the MCP server give the same answer, and that every transform is
+// defined once, in src/transforms.ts, so no second copy can drift from it.
 import { describe, it, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Script } from "node:vm";
@@ -89,6 +90,18 @@ describe("the CLI and the MCP server agree", () => {
       "transform_format_imports",
       "transform_add_strict",
     ]);
+  });
+});
+
+describe("one copy", () => {
+  it("G16 each transform is defined once, in src/transforms.ts, and the CLI and the MCP server import it", async () => {
+    const { transforms } = (await import(join(ROOT, "dist/transforms.js"))) as { transforms: Record<string, { name: string }> };
+    const sources = readdirSync(join(ROOT, "src")).filter((f) => f.endsWith(".ts"));
+    const read = (f: string) => readFileSync(join(ROOT, "src", f), "utf8");
+    for (const fn of Object.values(transforms)) {
+      expect(sources.filter((f) => new RegExp(`^\\s*(?:export\\s+)?function ${fn.name}\\(`, "m").test(read(f))), fn.name).toEqual(["transforms.ts"]);
+    }
+    for (const f of ["index.ts", "mcp-server.ts"]) expect(read(f), f).toContain('from "./transforms.js"');
   });
 });
 

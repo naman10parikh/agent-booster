@@ -1,11 +1,10 @@
 /**
- * Shared transform registry — the canonical, importable form of the six zero-LLM
- * transforms. `src/index.ts` keeps its own self-contained copies (so the published
- * single-file CLI stays dependency-free); this module re-exports the same transform
- * functions for the routing loop (`route.ts`) and the sandbox runner (`sandbox-run.ts`)
- * to consume programmatically without shelling out to the CLI.
+ * The six zero-LLM transforms, defined once. The CLI (`index.ts`), the MCP server
+ * (`mcp-server.ts`), the routing loop (`route.ts`) and the sandbox runner (`sandbox-run.ts`)
+ * all import them from here, so a new transform goes in this file only.
  *
- * The transform bodies here are identical in behaviour to those in `src/index.ts`.
+ * Each function must stay self-contained (no outside references): `sandbox-run.ts` sends
+ * its source text into the sandbox with `Function.prototype.toString()`.
  */
 
 export interface TransformResult {

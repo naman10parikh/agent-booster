@@ -148,6 +148,9 @@ Agent Booster module, written in pure TypeScript and regex: no WASM, no native b
 
 ### Transforms (6 implemented)
 
+Each transform is defined once, in [src/transforms.ts](src/transforms.ts). The CLI, the MCP server, the
+router and the sandbox runner all use that file.
+
 | Transform            | What it does                                                              |
 | -------------------- | ------------------------------------------------------------------------- |
 | `var-to-const`       | Convert `var`/`let` to `const` where the binding is never reassigned.     |
@@ -186,7 +189,7 @@ The MCP server (`agent-booster-mcp`) exposes the six transforms as tools that ea
 
 ### Project maturity
 
-An early but working tool (v1.0.0): 6 transforms, 7 end-to-end tests and 15 golden evals (including a
+An early but working tool (v1.0.0): 6 transforms, 7 end-to-end tests and 16 golden evals (including a
 check that the CLI and the MCP server agree), a CLI verified end to end, and a daily improvement loop.
 It is honest about its limits: regex heuristics, not a full codemod engine, and two roadmap
 transforms not built yet. It does exactly what is documented here and nothing more.

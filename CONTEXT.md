@@ -8,7 +8,8 @@ Current state of the repo. Read this at session start; deeper docs are linked at
   6 transforms implemented (`var-to-const`, `remove-console`, `add-logging`, `add-error-handling`,
   `format-imports`, `add-strict`); 2 transforms on the roadmap (`add-types`, `async-await` — need
   AST analysis, not regex).
-- **Product:** single self-contained TypeScript binary at `src/index.ts`, zero runtime deps.
+- **Product:** the TypeScript CLI at `src/index.ts`. The transforms are defined once, in
+  `src/transforms.ts`, with no dependencies; only `sandbox-run` loads the E2B SDK.
 - **Harness:** inherited Energy agent-native scaffold (identity / memory / brain / skills / hooks /
   rules / sub-agents). Forged 2026-05-25 via harness-forge (CP103); docs standardized to the
   agent-native doc standard (CP104, 2026-05-26).

@@ -58,11 +58,11 @@ general toolkit: `architect`, `code-reviewer`, `loop-auditor`, `performance-anal
 
 | Path | What lives here |
 | --- | --- |
-| `src/index.ts` | The CLI: argument parsing, file walker and its own copy of the six transforms. |
-| `src/transforms.ts` | The shared copy of the transforms, used by the router and the sandbox runner. |
-| `src/mcp-server.ts` | The MCP server, with its own inline copy so it runs standalone. |
+| `src/index.ts` | The CLI: argument parsing and the file walker. It imports the transforms. |
+| `src/transforms.ts` | The six transforms, defined once. The CLI, the MCP server, the router and the sandbox runner import them. |
+| `src/mcp-server.ts` | The MCP server: one tool per transform, each calling the function from `src/transforms.ts`. |
 | `src/route.ts`, `src/run-log.ts`, `src/memory-search.ts`, `src/sandbox-run.ts` | The router (dispatch), the run log (observability), BM25 memory search, the E2B runner. |
-| `src/__tests__/`, `eval/` | 7 end-to-end CLI tests and 15 golden evals (including CLI and MCP agreement). |
+| `src/__tests__/`, `eval/` | 7 end-to-end CLI tests and 16 golden evals (including CLI and MCP agreement). |
 | `identity/`, `memory/`, `brain/` | Booster's SOUL, BRAND, HEARTBEAT and MEMORY; long-term memory and append-only LEARNINGS; the Obsidian brain. |
 | `skills/`, `hooks/`, `.claude/` | Skills, the plugin's hook, and the maintainer harness (rules, agents, settings). |
 | `.claude-plugin/`, `gemini-extension.json`, `.well-known/agent-card.json` | Claude Code plugin, Gemini CLI extension, A2A agent card. |
@@ -88,10 +88,12 @@ run the real CLI on sample input.
 - **Conservative, not clever.** Transforms are heuristic, not AST. When in doubt, skip the edit. A
   reassignment check covers every assignment operator and `++`/`--`; generated code must parse as plain
   JavaScript.
-- **Three copies, one behaviour.** A transform change lands in `src/index.ts`, `src/transforms.ts` and
-  `src/mcp-server.ts`, with a golden case in `eval/golden.test.ts` that failed before the change.
-- **Adding a transform:** add it to all three copies and their registries, to the `list`/`--help` text
-  and the README table, and add a golden case. Keep zero runtime dependencies in the transforms.
+- **One copy.** A transform lives only in `src/transforms.ts`; every other file imports it. A transform
+  change lands there, with a golden case in `eval/golden.test.ts` that failed before the change. Golden
+  case G16 fails if a transform is defined anywhere else.
+- **Adding a transform:** add the function and its `transforms` entry in `src/transforms.ts`, a tool in
+  `TOOLS` in `src/mcp-server.ts`, a line in the `--help` text and a row in the README table, then a
+  golden case and the tool's name in G14. Keep zero runtime dependencies in the transforms.
 
 ## Commit grammar
 
@@ -113,5 +115,5 @@ fix: / docs: / refactor: / test: / chore:  conventional commits
 
 - Never make a network call or require an API key in a transform.
 - Never let a transform rewrite code it is unsure about.
-- Never let the three copies of a transform drift apart.
+- Never copy a transform into a second file: import it from `src/transforms.ts`.
 - Never run `route` blindly: `remove-console` and `add-logging` undo each other, so pass `--only=`.
