@@ -217,9 +217,9 @@ Every project in this fleet is graded on the same 11 harness components and on s
 | Tools/CLIs | ✅ | package.json:12-15 (agent-booster, agent-booster-mcp) |
 | Hooks | ✅ | .claude/settings.json:4,24; hooks/hooks.json:4; hooks/suggest-transforms.cjs:1 |
 | Sub-agents | ✅ | .claude/agents/transform-reviewer.md:1; .claude/agents/edit-router.md:1 |
-| MCPs | ✅ | src/mcp-server.ts:158 (6 tools); .mcp.json:3 |
+| MCPs | ✅ | src/mcp-server.ts:43 (6 tools); .mcp.json:3 |
 | Dispatch | ✅ | src/route.ts:90 (routeCode); .github/workflows/improve.yml:9 (daily) |
-| Evals | ✅ | eval/golden.test.ts:54 (15 cases); .github/workflows/ci.yml:32-35 |
+| Evals | ✅ | eval/golden.test.ts:55 (16 cases); .github/workflows/ci.yml:32-35 |
 | Observability | ✅ | src/run-log.ts:50 (logs/runs.jsonl on every run; `agent-booster log`) |
 | Sandbox/Infra | ✅ | src/sandbox-run.ts:69 (E2B Sandbox.create at :84) |
 | Self-improvement | ✅ | dsip.json:1 (L2); scripts/improve.mjs:1 |
