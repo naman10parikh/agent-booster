@@ -5,7 +5,9 @@
 
 **Mechanical code edits without a model: deterministic, free, offline.**
 
-Booster is an agent-native, recursively self-improving agent employee whose job is tools / CLIs. Coding agents use it through its skills, its MCP server and its command line. It improves itself through its own evals and a scheduled improvement loop, and a person reviews every change.
+Agent Booster is an agent employee, a packaged specialist agent with its own skills, memory and tests. It owns one job: tools / CLIs. Its persona is Booster. Coding agents use it through its skills, its MCP server and its command line. A scheduled job runs its evals and proposes fixes. A person makes every change.
+
+_Agent Booster is part of an agent-native play for agent-native systems that can eventually be recursively self-improving and evolving, operated by agent employees._
 
 [AGENTS.md](AGENTS.md) · [llms.txt](llms.txt) · [Skills](skills/) · [Security](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [All projects](https://github.com/naman10parikh)
 <!-- fleet:header:end -->
@@ -24,6 +26,8 @@ them. Route the boring edits here for free, and keep the model for edits that ne
 /plugin marketplace add naman10parikh/agent-booster
 /plugin install agent-booster@agent-booster
 ```
+
+<details><summary>Its MCP server, Codex, Cursor, Gemini CLI, one skill and the command line</summary>
 
 **Its MCP server**, in any MCP client:
 
@@ -68,6 +72,8 @@ git clone --depth 1 https://github.com/naman10parikh/agent-booster /tmp/agent-bo
 ```bash
 npx -y -p github:naman10parikh/agent-booster agent-booster --help
 ```
+
+</details>
 
 Codex, Cursor, OpenCode, GitHub Copilot and other agents read [AGENTS.md](AGENTS.md); Claude Code reads [CLAUDE.md](CLAUDE.md) and Gemini CLI reads [GEMINI.md](GEMINI.md), which import it. [llms.txt](llms.txt) maps every surface for agents that read first.
 <!-- fleet:use:end -->
@@ -202,7 +208,7 @@ Every project in this fleet is graded on the same 11 harness components and on s
 | Evals | ✅ | eval/golden.test.ts:54 (15 cases); .github/workflows/ci.yml:32-35 |
 | Observability | ✅ | src/run-log.ts:50 (logs/runs.jsonl on every run; `agent-booster log`) |
 | Sandbox/Infra | ✅ | src/sandbox-run.ts:69 (E2B Sandbox.create at :84) |
-| RSI / open-endedness | ✅ | dsip.json:1 (L2); scripts/improve.mjs:1 |
+| Self-improvement | ✅ | dsip.json:1 (L2); scripts/improve.mjs:1 |
 
 ✅ real and tested · 🟡 partial, with the reason in the row · ❌ absent
 <!-- fleet:anatomy:end -->
@@ -210,17 +216,17 @@ Every project in this fleet is graded on the same 11 harness components and on s
 <!-- fleet:footer:start -->
 ## How it improves itself
 
-It carries its own evals and a self-improvement contract, [`dsip.json`](dsip.json) (level L2). A scheduled loop runs the evals and writes what it would change as a proposal. A person reviews every proposal, and none that lowers a score is accepted. Lessons it learns are kept as rules in its memory files.
+It carries its own evals and a self-improvement contract, [`dsip.json`](dsip.json), which says what it may change and how a change is judged. A scheduled job runs its evals and proposes fixes. A person makes every change. Lessons it learns are kept as rules in its memory files.
 
 ## Part of a fleet
 
-One of the agent-native open-source projects by [Naman Parikh](https://github.com/naman10parikh): agent-native systems, operated by agent employees, built to improve and evolve themselves. Each one owns one part of an agent's harness or of the product around it.
+One of the projects by [Naman Parikh](https://github.com/naman10parikh). Each owns one part of an agent's harness, or of the product around an agent, and all of them follow one standard.
 
 Siblings: [agentdial](https://github.com/naman10parikh/agentdial) (identity) · [wikimem](https://github.com/naman10parikh/wikimem) (memory) · [skillsmith](https://github.com/naman10parikh/skillsmith) (skills) · [armory](https://github.com/naman10parikh/armory) (MCPs and the component registry) · [agentgrid](https://github.com/naman10parikh/agentgrid) (dispatch) · [agentswarm](https://github.com/naman10parikh/agentswarm) (dispatch) · [agentbench](https://github.com/naman10parikh/agentbench) (evals) · [agentmoney](https://github.com/naman10parikh/agentmoney) (observability) · [claude-harness](https://github.com/naman10parikh/claude-harness) (the whole harness, as a template).
 
 ## Contributing and security
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md); AI-assisted pull requests are welcome. Report a vulnerability privately, as [SECURITY.md](SECURITY.md) explains.
+Read [CONTRIBUTING.md](CONTRIBUTING.md). AI-assisted pull requests are welcome. Report a vulnerability privately, as [SECURITY.md](SECURITY.md) explains.
 
 ## Star history
 
