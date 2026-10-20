@@ -5,7 +5,7 @@
 
 <p align="center">
 <a href="https://github.com/naman10parikh/agent-booster/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/naman10parikh/agent-booster/actions/workflows/ci.yml/badge.svg"></a>
-<a href="https://github.com/naman10parikh/agent-booster/releases"><img alt="Version" src="https://img.shields.io/badge/version-1.0.0-2f5d8a?style=flat-square"></a>
+<a href="https://github.com/naman10parikh/agent-booster/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/naman10parikh/agent-booster?style=flat-square&amp;color=2f5d8a"></a>
 <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-2f5d8a?style=flat-square"></a>
 <a href="#use-it-from-any-coding-agent"><img alt="MCP server" src="https://img.shields.io/badge/MCP-server-1e3f60?style=flat-square"></a>
 <a href="https://x.com/naman10parikh"><img alt="Follow @naman10parikh on X" src="https://img.shields.io/badge/follow-%40naman10parikh-000000?style=flat-square&amp;logo=x&amp;logoColor=white"></a>
@@ -20,7 +20,7 @@ Agent Booster is an agent employee, a packaged specialist agent with its own ski
 
 _Agent Booster is part of an agent-native play for agent-native systems that can eventually be recursively self-improving and evolving, operated by agent employees._
 
-<p align="center"><img alt="Agent Booster on the command line" src="assets/terminal.svg" width="880"></p>
+<p align="center"><img alt="Agent Booster: a real task, run offline" src="assets/demo.svg" width="880"></p>
 <!-- fleet:header:end -->
 
 Agent Booster (`agent-booster`) does the mechanical part of code editing without a model: it strips
