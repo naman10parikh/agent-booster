@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: "Agent Booster: Mechanical code edits without a model: deterministic, free, offline."
+type: software
+authors:
+  - family-names: Parikh
+    given-names: Naman
+repository-code: "https://github.com/naman10parikh/agent-booster"
+license: MIT
+version: "1.0.0"
+abstract: "Mechanical code edits without a model: deterministic, free, offline."
+keywords: ["agent-native", "codemod", "code-transform", "developer-tools"]
