@@ -1,11 +1,12 @@
 # eval/
 
-Eval + observer harness for `agent-booster` (scaffold — not yet populated).
+Golden evals: binary pass or fail, run by `pnpm build && pnpm eval` and by CI on every push.
+[`golden.test.ts`](golden.test.ts) holds 15 cases. Each pins the exact output of a transform on a
+small input, including the inputs a careless regex gets wrong (compound assignment, loop counters,
+console text inside a string, an existing try/catch). It also checks that generated code parses as
+plain JavaScript, that `route --only` runs only the named transforms, and that the CLI and the MCP
+server return the same code for every input, so their copies of the transforms cannot drift.
 
-This directory will hold the evaluation rubric and observer that score transform correctness over
-time (the AutoLab pattern: same code, measured against golden input→output pairs, so regressions
-are caught automatically). Until then, the live regression gate is the vitest suite in
-[`src/__tests__/`](../src/__tests__/), run via `pnpm test`.
-
-See the harness component map in [CLAUDE.md](../CLAUDE.md) and the hub
-[`brain/MOC - agent-booster.md`](../brain/MOC%20-%20agent-booster.md).
+[`baseline.json`](baseline.json) records the accepted pass count. The scheduled improvement loop
+(`scripts/improve.mjs`) fails when the count drops below it and writes a proposal either way. The
+end-to-end CLI tests live in [`src/__tests__/`](../src/__tests__/) and run with `pnpm test`.

@@ -5,6 +5,9 @@
 I am **agent-booster**, a zero-LLM code-transform CLI and a self-contained Energy agent-native
 harness.
 
+**Name:** Booster (one word: the fast lane for mechanical edits). **Tagline:** Mechanical code
+edits without a model: deterministic, free, offline.
+
 **Mission:** route trivial, mechanical code edits to deterministic regex transforms so a coding
 agent never spends an LLM token (or a dollar) on work a fixed transform can do instantly and
 reproducibly.

@@ -1,28 +1,36 @@
-# agent-booster — Agent-Native Harness
+@AGENTS.md
 
-> Forged from Energy via harness-forge (CP103). One repo = one recursively self-improving
-> agent-native harness. Energy is the control center; this is a self-contained flavor.
+# CLAUDE.md: what is specific to Claude Code here
 
-## What this is
-`agent-booster` is a zero-LLM code-transform CLI. It performs simple, mechanical code edits
-(strip `console.log`s, sort imports, `var`→`const`, wrap async fns in try/catch, etc.) using
-deterministic regex transforms — no API calls, `$0` cost, fully reproducible. The point: route
-trivial edits to a deterministic transform and save the agent's LLM budget for edits that need
-real reasoning. Pure TypeScript/regex (no WASM), inspired by Ruflo's Agent Booster module.
-6 transforms implemented today; `add-types` and `async-await` are on the roadmap (need AST). The
-product CLI lives at the repo root (`src/`, standard CLI layout); the rest is the inherited
-agent-native harness. See README.md for the full transform table and maturity notes.
+AGENTS.md (imported above) is the one source: what Agent Booster does, its tools, where things live
+and what not to do. This file adds only what Claude Code loads or needs.
 
-## Harness components (the formula)
-identity/ · memory/ + brain/ · skills/ + .claude/skills · hooks/ + .claude/hooks ·
-.claude/agents (subagents) · .mcp.json (plugins/MCP) · src/ (the CLI product) ·
-eval/ (eval+observer). Same formula as every Energy harness, different data.
-Note: this is a CLI tool, so the product is a single-binary `src/index.ts` at root — the
-forge's web-app placeholders (src/frontend|backend|db|auth) were removed as not applicable.
+## What Claude Code loads in this repository
+
+- **Rules:** `.claude/rules/*.md`, glob-loaded every session (the fleet's shared operating rules).
+- **Hooks:** `.claude/settings.json` wires `block-dangerous-commands.cjs` (Bash) and
+  `protect-secrets.cjs` (Read, Edit, Write, Bash) before each tool call, and
+  `hooks/suggest-transforms.cjs` after each Edit or Write: it names the free transform for any console
+  calls or `var` declarations left in the file you just edited. Prefer that transform to a manual edit.
+- **Sub-agents:** `.claude/agents/`, flat. Use `edit-router` before a batch edit and
+  `transform-reviewer` after any change to a transform.
+- **MCP:** `.mcp.json` starts only Agent Booster's own server, because the plugin ships that file to
+  strangers. The maintainer servers (a local build of the server, GitHub, Context7, memory, the
+  Obsidian vault in `brain/`) live in `.mcp.dev.json`: start Claude Code with
+  `claude --mcp-config .mcp.dev.json` to load them.
+- **Plugin:** `.claude-plugin/plugin.json` bundles the skills, the two Booster sub-agents, the
+  suggest-transforms hook and the MCP server. Check it with `claude plugin validate .`.
 
 ## Operating model
-You are the user's co-founder. Act, don't ask. Self-improve every session. Test as a user.
-Inherited rules in .claude/rules/ are glob-loaded every session.
 
-## Commit convention
-feat(skill): · feat(employee): · feat(company): — so git snap-back works at all 3 granularities.
+You are the maintainer's co-founder, not an assistant: act, then verify. Test as a user: pipe real code
+through the CLI and read the output. "It compiles" means nothing. When a tool fails, try another route
+before you report a block.
+
+## Before you say done
+
+```bash
+pnpm build && pnpm test && pnpm eval
+echo 'var x = 5;' | node dist/index.js var-to-const --stdin
+claude plugin validate .
+```

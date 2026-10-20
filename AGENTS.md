@@ -1,97 +1,117 @@
-# AGENTS.md — agent-booster orchestration conventions
+# AGENTS.md: Agent Booster
 
-> How an agent (Claude Code, or any LLM harness) should operate **this** repo.
-> This is the agent's contract for `agent-booster`; humans should start at [README.md](./README.md)
-> and [QUICKSTART.md](./QUICKSTART.md). The brain hub is [`brain/MOC - agent-booster.md`](./brain/MOC%20-%20agent-booster.md).
+> The one set of instructions for every coding agent (Codex, Cursor, OpenCode, Copilot, Claude Code,
+> Gemini CLI) and for people. `CLAUDE.md` and `GEMINI.md` import this file. The brain hub is
+> [`brain/MOC - agent-booster.md`](./brain/MOC%20-%20agent-booster.md).
 
-## What this repo is
+## What it does
 
-`agent-booster` is a **zero-LLM code-transform CLI**: deterministic, regex-based source edits
-(strip `console.log`s, sort imports, `var`→`const`, wrap async fns in try/catch, …) that cost
-`$0` and make no API calls. The product is a single TypeScript binary at `src/index.ts`; the rest
-of the tree is the inherited Energy agent-native harness (identity, memory, brain, skills, hooks,
-rules, sub-agents). See [CLAUDE.md](./CLAUDE.md) for the operating model.
+`agent-booster` does mechanical code edits with deterministic, regex-based transforms instead of a
+model: strip `console` calls, turn `var` and `let` into `const` where nothing reassigns them, sort
+imports, wrap async functions in try/catch, add debug logging, add `"use strict"`. Each run costs
+nothing, makes no network call and gives the same output for the same input. The point: route the
+boring edits here and keep the model for edits that need reasoning. Inspired by Ruflo's Agent Booster
+module; this is a pure TypeScript and regex reimplementation (no WASM).
 
-> The repo previously shipped a mis-copied WikiMem wiki-schema in this file. That schema has been
-> archived to [AGENTS.md.example](./AGENTS.md.example) for reference; this file is now the real,
-> repo-specific orchestration guide.
+## Its tools and how to call them
 
-## Directory map (what lives where)
+**Command line.** Run `npx -y -p github:naman10parikh/agent-booster agent-booster <command>`. The
+npm name `agent-booster` belongs to a different project, so do not `npm i agent-booster`.
 
-```
-src/                  # THE PRODUCT — the agent-booster CLI (single entry: index.ts)
-  index.ts            #   transform registry + the 6 transforms + arg parsing + file walker
-  __tests__/          #   vitest suite (runs the compiled CLI end-to-end)
-dist/                 # tsc build output (gitignored; compiled on publish)
-eval/                 # eval + observer harness (scaffold; see eval/README.md)
-identity/             # who this agent is: SOUL.md, BRAND.md, MEMORY.md, HEARTBEAT.md
-memory/               # long-term memory: MEMORY.md (index) + LEARNINGS.md (append-only)
-  archive/            #   compressed entries >30 days (never deleted)
-  daily/              #   per-session logs
-  topics/             #   deep-dive topic files
-  maintainer-prompts/ #   raw maintainer directives (kept empty in this public repo)
-brain/                # Obsidian knowledge graph: MOC + ORG_CONTEXT + ORG_MEMORY
-skills/               # repo-local skills (scaffold; inherited skills live in .claude/skills/)
-hooks/                # repo-local hooks (scaffold; active hooks live in .claude/hooks/)
-tools/                # repo-local tools (scaffold)
-scripts/              # harness utilities (memory-search, memory-compress, budget-manager, …)
-.claude/              # the Claude Code harness: rules/, skills/, hooks/, agents/, commands/
-  rules/              #   operating rules, glob-loaded every session
-  skills/             #   on-demand capabilities
-  hooks/              #   lifecycle automation (session start, pre-compact, …)
-  agents/             #   specialist sub-agents (code-reviewer, research-agent, …)
-  commands/           #   slash commands (/start, /wrap-up, /status, …)
-.github/workflows/    # CI (build + test on push)
-```
+| Command | What it does |
+| --- | --- |
+| `<transform> <file-or-dir> [--dry-run] [--json]` | Run one transform over a file or a folder (`.ts .tsx .js .jsx .mjs .cjs`, skipping `node_modules`, `dist` and dotfiles). |
+| `<transform> --stdin [--json]` | Read code from stdin, write the result (or `{code, changes, description}`) to stdout. |
+| `list` | List the six transforms. |
+| `route <file> [--dry-run] [--json] [--only=t1,t2]` | Find the mechanical edits in a file, run them for free, and name the edits that need a model. |
+| `memory-search "<query>"` | BM25 search over this repository's own knowledge (MEMORY.md, memory/, brain/, docs/). |
+| `sandbox-run <transform> <file>` | Run a transform inside an E2B microVM instead of on the host. Needs `E2B_API_KEY`. |
+| `log [N]` | Show the last N runs from the run log (`logs/runs.jsonl`). |
+| `--help`, `--version` | Help and version. |
 
-Empty scaffold dirs (`eval/`, `skills/`, `hooks/`, `tools/`, `memory/*`) each carry a one-line
-`README.md` explaining their intended role until they are populated.
+The six transforms: `var-to-const`, `remove-console`, `add-logging`, `add-error-handling`,
+`format-imports`, `add-strict`. Two more, `add-types` and `async-await`, are on the roadmap: they need
+the TypeScript compiler API, not regex.
 
-## How to work this repo (agent boot sequence)
+**MCP server.** `npx -y -p github:naman10parikh/agent-booster agent-booster-mcp` speaks JSON-RPC over
+stdio with one tool per transform. Each takes `{ "code": "<source>" }` and returns
+`{code, changes, description}`.
 
-1. Read [CLAUDE.md](./CLAUDE.md) (operating model), then [CONTEXT.md](./CONTEXT.md) (current state).
-2. Read [`brain/MOC - agent-booster.md`](./brain/MOC%20-%20agent-booster.md) to navigate the docs.
-3. Check [memory/LEARNINGS.md](./memory/LEARNINGS.md) for known pitfalls before changing `src/`.
-4. `.claude/rules/*.md` are glob-loaded automatically — they are the hard rules.
+| Tool | What it does |
+| --- | --- |
+| `transform_var_to_const` | `var`/`let` to `const` where the binding is never reassigned. |
+| `transform_remove_console` | Strip `console.*` statements. |
+| `transform_add_logging` | Add a `console.debug` line at each function entry. |
+| `transform_add_error_handling` | Wrap async functions that lack try/catch. |
+| `transform_format_imports` | Sort and group imports: builtins, external, relative. |
+| `transform_add_strict` | Prepend `"use strict"` once. |
 
-## Build & test (the only commands you need)
+**Skills** (in [`skills/`](skills/)): `route-the-boring-path` and `sandbox-untrusted-transform` (for
+any agent using the tool) and `add-a-transform` (for working on Agent Booster itself).
+
+**Sub-agents** (in `.claude/agents/`): `transform-reviewer` (hunts for inputs a transform rewrites
+wrongly) and `edit-router` (splits a requested change into free transforms and model work), plus a
+general toolkit: `architect`, `code-reviewer`, `loop-auditor`, `performance-analyzer`,
+`research-agent`, `security-reviewer`, `test-writer`. They read and report; the parent edits.
+
+## Where things live
+
+| Path | What lives here |
+| --- | --- |
+| `src/index.ts` | The CLI: argument parsing, file walker and its own copy of the six transforms. |
+| `src/transforms.ts` | The shared copy of the transforms, used by the router and the sandbox runner. |
+| `src/mcp-server.ts` | The MCP server, with its own inline copy so it runs standalone. |
+| `src/route.ts`, `src/run-log.ts`, `src/memory-search.ts`, `src/sandbox-run.ts` | The router (dispatch), the run log (observability), BM25 memory search, the E2B runner. |
+| `src/__tests__/`, `eval/` | 7 end-to-end CLI tests and 15 golden evals (including CLI and MCP agreement). |
+| `identity/`, `memory/`, `brain/` | Booster's SOUL, BRAND, HEARTBEAT and MEMORY; long-term memory and append-only LEARNINGS; the Obsidian brain. |
+| `skills/`, `hooks/`, `.claude/` | Skills, the plugin's hook, and the maintainer harness (rules, agents, settings). |
+| `.claude-plugin/`, `gemini-extension.json`, `.well-known/agent-card.json` | Claude Code plugin, Gemini CLI extension, A2A agent card. |
+| `dsip.json`, `scripts/improve.mjs`, `.github/workflows/` | The self-improvement contract, its loop, CI and the daily loop. |
+
+## Build, test, run
 
 ```bash
-pnpm install      # install deps (Node >= 18)
-pnpm build        # tsc → dist/
-pnpm test         # vitest — runs the compiled CLI end-to-end (7 tests)
-pnpm dev          # tsc --watch
+pnpm install      # Node >= 18; also builds dist/ (the prepare script)
+pnpm test         # 7 end-to-end tests of the compiled CLI
+pnpm eval         # 15 golden evals (run after pnpm build)
+pnpm improve      # the self-improvement loop; writes logs/improve/latest.md
+echo 'var x = 5;' | node dist/index.js var-to-const --stdin
 ```
 
-**Self-test gate:** never claim a `src/` change works until `pnpm build && pnpm test` are both
-green AND you have run the real CLI on sample input (e.g.
-`echo 'var x = 5;' | node dist/index.js var-to-const --stdin`).
+Never claim a `src/` change works until `pnpm build && pnpm test && pnpm eval` are green and you have
+run the real CLI on sample input.
 
-## Editing rules (repo-specific)
+## Editing rules
 
-- **Honesty bar:** the README documents exactly 6 implemented transforms and 2 roadmap transforms
-  (`add-types`, `async-await`). Do **not** advertise transforms that aren't in the `transforms`
-  registry in `src/index.ts`. No fabricated benchmarks (no "352x", no "WASM" — this is pure regex).
-- **Transforms are heuristic, not AST.** Keep them conservative; when in doubt, skip the edit
-  rather than risk a wrong rewrite. AST-level work belongs to the roadmap milestone.
-- **Adding a transform:** add the function in `src/index.ts`, register it in the `transforms` map,
-  add it to BOTH the `list`/`--help` text and the README transform table, and add a vitest case.
-- Keep `src/index.ts` self-contained — zero runtime dependencies is a feature.
+- **Honesty bar:** document exactly what is in the `transforms` registry. Do not advertise a transform
+  that is not there, and publish no invented benchmarks (no "352x", no "WASM": this is pure regex).
+- **Conservative, not clever.** Transforms are heuristic, not AST. When in doubt, skip the edit. A
+  reassignment check covers every assignment operator and `++`/`--`; generated code must parse as plain
+  JavaScript.
+- **Three copies, one behaviour.** A transform change lands in `src/index.ts`, `src/transforms.ts` and
+  `src/mcp-server.ts`, with a golden case in `eval/golden.test.ts` that failed before the change.
+- **Adding a transform:** add it to all three copies and their registries, to the `list`/`--help` text
+  and the README table, and add a golden case. Keep zero runtime dependencies in the transforms.
 
-## Commit convention
-
-This repo inherits Energy's snap-back grammar (git revert works at 3 granularities):
+## Commit grammar
 
 ```
-feat(skill):    — a new/changed capability
-feat(employee): — an agent-role / persona change
-feat(company):  — repo-wide structural change
-fix: / docs: / refactor: / test: / chore:  — conventional commits
+feat(skill):    a new or changed capability
+feat(employee): an agent-role or persona change
+feat(company):  a repository-wide structural change
+fix: / docs: / refactor: / test: / chore:  conventional commits
 ```
 
-## Memory & brain protocol
+## Memory and brain
 
-- New durable decision → one line in [memory/MEMORY.md](./memory/MEMORY.md) under the right header.
-- Error fixed → root-cause entry in [memory/LEARNINGS.md](./memory/LEARNINGS.md).
-- Anything worth navigating later → wikilink it into the [MOC](./brain/MOC%20-%20agent-booster.md);
-  every brain note backlinks the MOC and carries YAML frontmatter.
+- A new durable decision: one line in [memory/MEMORY.md](./memory/MEMORY.md) under the right header.
+- An error fixed: a root-cause entry in [memory/LEARNINGS.md](./memory/LEARNINGS.md), ending in a rule.
+- Anything worth finding later: link it from the [MOC](./brain/MOC%20-%20agent-booster.md).
+- An older, mis-copied wiki schema is kept for reference in [AGENTS.md.example](./AGENTS.md.example).
+
+## What not to do
+
+- Never make a network call or require an API key in a transform.
+- Never let a transform rewrite code it is unsure about.
+- Never let the three copies of a transform drift apart.
+- Never run `route` blindly: `remove-console` and `add-logging` undo each other, so pass `--only=`.

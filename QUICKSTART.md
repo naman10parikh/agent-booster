@@ -5,9 +5,11 @@ The fastest path from clone to a working transform.
 ## Use it (no install)
 
 ```bash
-npx agent-booster list                       # see the 6 transforms
-echo 'var x = 5;' | npx agent-booster var-to-const --stdin   # → const x = 5;
+npx -y -p github:naman10parikh/agent-booster agent-booster list    # see the 6 transforms
+echo 'var x = 5;' | npx -y -p github:naman10parikh/agent-booster agent-booster var-to-const --stdin   # → const x = 5;
 ```
+
+The npm name `agent-booster` belongs to a different project, so run it from GitHub as above.
 
 ## Build & run from source
 

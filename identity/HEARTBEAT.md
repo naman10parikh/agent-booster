@@ -17,7 +17,8 @@ repo and its release pipeline rather than a scanning loop.
 - **Healthy:** `pnpm build` and `pnpm test` both green (7 tests); README transform table matches
   the `transforms` registry in `src/index.ts`.
 - **Warning:** CI failing on main, or docs advertising more than is implemented.
-- **Critical:** published package fails a fresh `npx agent-booster list` → yank/patch.
+- **Critical:** a fresh `npx -y -p github:naman10parikh/agent-booster agent-booster list` fails →
+  patch main at once (the npm name `agent-booster` is another project's).
 
 ## Recovery
 

@@ -1,15 +1,40 @@
-# agent-booster
+# Agent Booster
 
-> > Zero-LLM code transforms — deterministic, $0 cost, no API calls.
+> Mechanical code edits without a model: deterministic, free, offline. Agent Booster (`agent-booster`) strips console calls, turns var and let into const, sorts imports, wraps async functions in try/catch, adds debug logging and adds "use strict", with regex transforms that cost nothing and give the same output every time. It ships a CLI (`agent-booster`), an MCP server (`agent-booster-mcp`, one tool per transform), skills and a Claude Code plugin, and it improves itself through its own evals.
 
-## Documentation
+## Start here
 
-- [README.md](README.md): > Zero-LLM code transforms — deterministic, $0 cost, no API calls.
-- [AGENTS.md](AGENTS.md): > How an agent (Claude Code, or any LLM harness) should operate this repo.
-- [CLAUDE.md](CLAUDE.md): > Forged from Energy via harness-forge (CP103). One repo = one recursively self-improving
-- [QUICKSTART.md](QUICKSTART.md): The fastest path from clone to a working transform.
+- [AGENTS.md](AGENTS.md): what it does, every command and MCP tool, the editing rules, what not to do
+- [README.md](README.md): overview, one-step install for every coding agent, quick start
 
-## Notes
+## Skills
 
-- This file follows the llms.txt convention (https://llmstxt.org) so AI agents can
-  discover this repo's docs without scraping. Generated from the README + key docs.
+- [route-the-boring-path](skills/route-the-boring-path/SKILL.md): route the mechanical part of an edit to a free transform before spending model tokens
+- [sandbox-untrusted-transform](skills/sandbox-untrusted-transform/SKILL.md): transform untrusted code inside an E2B microVM
+- [add-a-transform](skills/add-a-transform/SKILL.md): add a new transform to Agent Booster correctly
+
+## MCP tools
+
+- [MCP server source](src/mcp-server.ts): six tools over stdio: transform_var_to_const, transform_remove_console, transform_add_logging, transform_add_error_handling, transform_format_imports, transform_add_strict; each takes {"code": "..."}
+- [Plugin manifest](.claude-plugin/plugin.json): the Claude Code plugin (skills, sub-agents, hook, MCP server)
+- [Gemini CLI extension](gemini-extension.json): context and MCP server for Gemini CLI
+- [A2A agent card](.well-known/agent-card.json): name, description, skills
+
+## Identity
+
+- [SOUL.md](identity/SOUL.md): who Booster is, its mission and boundaries
+- [BRAND.md](identity/BRAND.md): why the name, the tagline
+- [HEARTBEAT.md](identity/HEARTBEAT.md): what it checks and how often
+
+## Docs
+
+- [QUICKSTART.md](QUICKSTART.md): from clone to a working transform
+- [Golden evals](eval/README.md): what the 15 evals check
+- [dsip.json](dsip.json): the self-improvement contract (level L2)
+- [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md)
+
+## Optional
+
+- [MEMORY.md](memory/MEMORY.md): long-term memory index
+- [LEARNINGS.md](memory/LEARNINGS.md): corrections that became rules
+- [Knowledge graph hub](brain/MOC%20-%20agent-booster.md): the Obsidian brain
