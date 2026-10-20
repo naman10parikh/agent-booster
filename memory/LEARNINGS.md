@@ -28,3 +28,15 @@ Every error → root cause → rule. Auto-compressed when >500 lines (memory-com
 - **Rule:** every extracted repo's `AGENTS.md` must describe THIS repo's dirs and build/commit
   conventions; keep the generic template as `AGENTS.md.example` if it's worth referencing. (Fixed
   in CP104 doc-standardization.)
+
+## 2026-10-19 — "Skips anything reassigned" missed `+=` and `++`
+
+- **What broke:** `var-to-const` turned `let count = 0; count += 1;` and `for (let i = 0; ...; i++)`
+  into `const`, which throws at run time. `remove-console` also ate the next line's indentation, and
+  `add-error-handling` wrote `catch (err: unknown)`, which is not valid JavaScript.
+- **Root cause:** the reassignment check only matched a plain `name =`; the console regex ended in
+  `\s*`, which swallows the next line's spaces; the catch clause used TypeScript-only syntax.
+- **Rule:** a reassignment check covers every assignment operator and `++`/`--`; a line-removal regex
+  ends in `[ \t]*\n?`; generated code must parse as plain JavaScript. Each fix lands in all three
+  copies (CLI, `src/transforms.ts`, MCP server) with a golden case in `eval/golden.test.ts` that
+  failed before it, and the CLI-and-MCP agreement case guards the copies from drifting.

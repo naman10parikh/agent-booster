@@ -55,10 +55,10 @@ function varToConst(code: string): TransformResult {
   // Convert `var` to `const` (safe: top-level declarations)
   let result = code.replace(/\bvar\s+(\w+)\s*=/g, (_match, name: string) => {
     // Check if the variable is reassigned later
-    const reassignPattern = new RegExp(`\\b${name}\\s*=[^=]`, "g");
+    const reassignPattern = new RegExp(`\\b${name}\\s*(?:[-+*/%&|^]|\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?)?=(?!=)`, "g");
     const matches = code.match(reassignPattern);
     // First match is the declaration itself
-    if (matches && matches.length <= 1) {
+    if (matches && matches.length <= 1 && !new RegExp(`(?:\\+\\+|--)\\s*\\b${name}\\b|\\b${name}\\s*(?:\\+\\+|--)`).test(code)) {
       changes++;
       return `const ${name} =`;
     }
@@ -68,11 +68,11 @@ function varToConst(code: string): TransformResult {
   // Convert `let` to `const` where not reassigned
   result = result.replace(/\blet\s+(\w+)\s*=/g, (_match, name: string) => {
     const reassignPattern = new RegExp(
-      `(?<!(?:const|let|var)\\s*)\\b${name}\\s*=[^=]`,
+      `(?<!(?:const|let|var)\\s*)\\b${name}\\s*(?:[-+*/%&|^]|\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?)?=(?!=)`,
       "g",
     );
     const fullMatches = result.match(reassignPattern);
-    if (!fullMatches || fullMatches.length === 0) {
+    if ((!fullMatches || fullMatches.length === 0) && !new RegExp(`(?:\\+\\+|--)\\s*\\b${name}\\b|\\b${name}\\s*(?:\\+\\+|--)`).test(result)) {
       changes++;
       return `const ${name} =`;
     }
@@ -86,7 +86,7 @@ function removeConsole(code: string): TransformResult {
   let changes = 0;
 
   const result = code.replace(
-    /^\s*console\.(log|warn|error|debug|info|trace|dir|table|time|timeEnd|group|groupEnd)\([\s\S]*?\);\s*\n?/gm,
+    /^[ \t]*console\.(log|warn|error|debug|info|trace|dir|table|time|timeEnd|group|groupEnd)\([\s\S]*?\);[ \t]*\n?/gm,
     () => {
       changes++;
       return "";
@@ -139,7 +139,7 @@ function addErrorHandling(code: string): TransformResult {
       return `${indent}${declaration}
 ${innerIndent}try {
 ${wrappedBody}
-${innerIndent}} catch (err: unknown) {
+${innerIndent}} catch (err) {
 ${innerIndent}  const error = err instanceof Error ? err : new Error(String(err));
 ${innerIndent}  console.error("[${funcName}]", error.message);
 ${innerIndent}  throw error;
@@ -277,6 +277,7 @@ Transforms:
 
 Commands:
   route <file>           Classify edits → run mechanical ones for $0, escalate the rest to an LLM
+                         (--only=t1,t2 limits it to the transforms you name)
   memory-search "<q>"    BM25 search over this repo's brain (MEMORY.md, memory/, brain/, docs/)
   sandbox-run <t> <f>    Run transform <t> over file <f> inside an isolated E2B sandbox
   log [N]                Show the last N runs from the observability trail (logs/runs.jsonl)
@@ -290,9 +291,9 @@ Options:
 Examples:
   agent-booster var-to-const src/
   agent-booster remove-console src/utils.ts --dry-run
-  agent-booster route src/utils.ts --dry-run
+  agent-booster route src/utils.ts --dry-run --only=remove-console,format-imports
   agent-booster memory-search "zero-LLM regex transforms"
-  cat file.ts | agent-booster add-types --stdin
+  cat file.ts | agent-booster format-imports --stdin
 `);
     process.exit(0);
   }
@@ -363,12 +364,14 @@ Examples:
     const file = args
       .slice(1)
       .find((a) => !a.startsWith("-"));
+    const onlyArg = args.find((a) => a.startsWith("--only="));
+    const only = onlyArg ? onlyArg.slice("--only=".length).split(",").filter(Boolean) : undefined;
     if (!file) {
       console.error("route: no file specified. Usage: agent-booster route <file>");
       process.exit(1);
     }
     try {
-      const plan = routeFile(file, { dryRun });
+      const plan = routeFile(file, { dryRun, ...(only ? { only } : {}) });
       recordRun({
         ts: new Date().toISOString(),
         command: "route",

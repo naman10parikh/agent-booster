@@ -19,9 +19,9 @@ export type TransformFn = (code: string, filename: string) => TransformResult;
 export function varToConst(code: string): TransformResult {
   let changes = 0;
   let result = code.replace(/\bvar\s+(\w+)\s*=/g, (_match, name: string) => {
-    const reassignPattern = new RegExp(`\\b${name}\\s*=[^=]`, "g");
+    const reassignPattern = new RegExp(`\\b${name}\\s*(?:[-+*/%&|^]|\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?)?=(?!=)`, "g");
     const matches = code.match(reassignPattern);
-    if (matches && matches.length <= 1) {
+    if (matches && matches.length <= 1 && !new RegExp(`(?:\\+\\+|--)\\s*\\b${name}\\b|\\b${name}\\s*(?:\\+\\+|--)`).test(code)) {
       changes++;
       return `const ${name} =`;
     }
@@ -29,11 +29,11 @@ export function varToConst(code: string): TransformResult {
   });
   result = result.replace(/\blet\s+(\w+)\s*=/g, (_match, name: string) => {
     const reassignPattern = new RegExp(
-      `(?<!(?:const|let|var)\\s*)\\b${name}\\s*=[^=]`,
+      `(?<!(?:const|let|var)\\s*)\\b${name}\\s*(?:[-+*/%&|^]|\\*\\*|<<|>>>?|&&|\\|\\||\\?\\?)?=(?!=)`,
       "g",
     );
     const fullMatches = result.match(reassignPattern);
-    if (!fullMatches || fullMatches.length === 0) {
+    if ((!fullMatches || fullMatches.length === 0) && !new RegExp(`(?:\\+\\+|--)\\s*\\b${name}\\b|\\b${name}\\s*(?:\\+\\+|--)`).test(result)) {
       changes++;
       return `const ${name} =`;
     }
@@ -45,7 +45,7 @@ export function varToConst(code: string): TransformResult {
 export function removeConsole(code: string): TransformResult {
   let changes = 0;
   const result = code.replace(
-    /^\s*console\.(log|warn|error|debug|info|trace|dir|table|time|timeEnd|group|groupEnd)\([\s\S]*?\);\s*\n?/gm,
+    /^[ \t]*console\.(log|warn|error|debug|info|trace|dir|table|time|timeEnd|group|groupEnd)\([\s\S]*?\);[ \t]*\n?/gm,
     () => {
       changes++;
       return "";
@@ -89,7 +89,7 @@ export function addErrorHandling(code: string): TransformResult {
       return `${indent}${declaration}
 ${innerIndent}try {
 ${wrappedBody}
-${innerIndent}} catch (err: unknown) {
+${innerIndent}} catch (err) {
 ${innerIndent}  const error = err instanceof Error ? err : new Error(String(err));
 ${innerIndent}  console.error("[${funcName}]", error.message);
 ${innerIndent}  throw error;
